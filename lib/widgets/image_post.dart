@@ -1,4 +1,3 @@
-// ================= widgets/image_post.dart =================
 import 'package:flutter/material.dart';
 
 class ImagePost extends StatelessWidget {

@@ -1,4 +1,3 @@
-// ================= services/feed_service.dart =================
 import 'dart:math';
 import '../models/post_model.dart';
 
@@ -40,6 +39,8 @@ class FeedService {
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8', // Added sample m3u8 file
+    'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8', // Added sample m3u8 file
   ];
 
   // Simulate fetching posts from a server

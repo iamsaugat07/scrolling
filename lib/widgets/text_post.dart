@@ -1,4 +1,3 @@
-// ================= widgets/text_post.dart =================
 import 'package:flutter/material.dart';
 
 class TextPost extends StatelessWidget {

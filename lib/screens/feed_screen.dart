@@ -1,29 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/post_model.dart';
-import '../widgets/feed_item.dart';
-import '../services/feed_service.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:reelscroll/provider/audio_provider.dart';
+import 'package:reelscroll/provider/feed_provider.dart';
 
-class FeedScreen extends StatefulWidget {
+import '../widgets/feed_item.dart';
+
+class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
 
   @override
-  State<FeedScreen> createState() => _FeedScreenState();
+  ConsumerState<FeedScreen> createState() => _FeedScreenState();
 }
 
-class _FeedScreenState extends State<FeedScreen> {
+class _FeedScreenState extends ConsumerState<FeedScreen> {
   final ScrollController _scrollController = ScrollController();
-  final FeedService _feedService = FeedService();
-  final List<Post> _posts = [];
-  bool _isLoading = false;
-  bool _hasMorePosts = true;
-  bool _globalMute = true;
   StreamSubscription? _volumeSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialPosts();
+    // Load initial posts on screen creation
+    Future.microtask(() => ref.read(feedProvider.notifier).loadInitialPosts());
     _scrollController.addListener(_scrollListener);
     _listenToVolumeChanges();
   }
@@ -31,63 +29,15 @@ class _FeedScreenState extends State<FeedScreen> {
   void _listenToVolumeChanges() {
     // In a real app, you would implement a platform channel to listen to volume changes
     // This is a simplified example
-    _volumeSubscription =
-        Stream.periodic(const Duration(seconds: 5)).listen((_) {
+    _volumeSubscription = Stream.periodic(const Duration(seconds: 5)).listen((_) {
       // Check if volume is increased and unmute if needed
       // This would be implemented via platform channels in a real app
     });
   }
 
-  Future<void> _loadInitialPosts() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final newPosts = await _feedService.fetchPosts(0, 10);
-      setState(() {
-        _posts.addAll(newPosts);
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      // Handle error
-    }
-  }
-
-  Future<void> _loadMorePosts() async {
-    if (_isLoading || !_hasMorePosts) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final newPosts = await _feedService.fetchPosts(_posts.length, 10);
-      setState(() {
-        if (newPosts.isEmpty) {
-          _hasMorePosts = false;
-        } else {
-          _posts.addAll(newPosts);
-        }
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      // Handle error
-    }
-  }
-
   void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 500) {
-      _loadMorePosts();
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500) {
+      ref.read(feedProvider.notifier).loadMorePosts();
     }
   }
 
@@ -99,12 +49,6 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
-  void _onMuteChanged(bool isMuted) {
-    setState(() {
-      _globalMute = isMuted;
-    });
-  }
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -114,6 +58,9 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final feedState = ref.watch(feedProvider);
+    final audioState = ref.watch(audioProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Feed'),
@@ -121,19 +68,17 @@ class _FeedScreenState extends State<FeedScreen> {
         leading: const Icon(Icons.camera_alt_outlined),
         actions: [
           IconButton(
-            icon: Icon(_globalMute ? Icons.volume_off : Icons.volume_up),
+            icon: Icon(audioState.isMuted ? Icons.volume_off : Icons.volume_up),
             onPressed: () {
-              setState(() {
-                _globalMute = !_globalMute;
-              });
+              ref.read(audioProvider.notifier).toggleMute();
             },
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          _posts.clear();
-          await _loadInitialPosts();
+          ref.read(feedProvider.notifier).clearPosts();
+          await ref.read(feedProvider.notifier).loadInitialPosts();
         },
         child: GestureDetector(
           onTap: () {
@@ -144,28 +89,43 @@ class _FeedScreenState extends State<FeedScreen> {
               _scrollToTop();
             }
           },
-          child: ListView.builder(
-            controller: _scrollController,
-            itemCount: _posts.length + 1,
-            itemBuilder: (context, index) {
-              if (index == _posts.length) {
-                return _hasMorePosts
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : const SizedBox();
-              }
-
-              return FeedItem(
-                post: _posts[index],
-                globalMute: _globalMute,
-                onMuteChanged: _onMuteChanged,
-              );
-            },
-          ),
+          child: feedState.error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Error: ${feedState.error}'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.read(feedProvider.notifier).loadInitialPosts(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : feedState.posts.isEmpty && feedState.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: feedState.posts.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == feedState.posts.length) {
+                          return feedState.hasMore
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : const SizedBox();
+                        }
+                        
+                        return FeedItem(
+                          post: feedState.posts[index],
+                          index: index,
+                        );
+                      },
+                    ),
         ),
       ),
     );

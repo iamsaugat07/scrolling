@@ -1,24 +1,22 @@
-// ================= widgets/feed_item.dart =================
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/post_model.dart';
 import 'text_post.dart';
 import 'image_post.dart';
 import 'video_post.dart';
 
-class FeedItem extends StatelessWidget {
+class FeedItem extends ConsumerWidget {
   final Post post;
-  final bool globalMute;
-  final Function(bool) onMuteChanged;
+  final int index;
 
   const FeedItem({
     super.key,
     required this.post,
-    required this.globalMute,
-    required this.onMuteChanged,
+    required this.index,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       elevation: 0,
@@ -50,14 +48,13 @@ class FeedItem extends StatelessWidget {
               ],
             ),
           ),
-
+          
           // Post content
-          _buildPostContent(),
-
+          _buildPostContent(post, index, ref),
+          
           // Interaction buttons
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
             child: Row(
               children: [
                 const Icon(Icons.favorite_border),
@@ -75,7 +72,7 @@ class FeedItem extends StatelessWidget {
     );
   }
 
-  Widget _buildPostContent() {
+  Widget _buildPostContent(Post post, int index, WidgetRef ref) {
     switch (post.type) {
       case PostType.text:
         return TextPost(content: post.content ?? '');
@@ -84,15 +81,15 @@ class FeedItem extends StatelessWidget {
       case PostType.video:
         return VideoPost(
           videoUrl: post.mediaUrl ?? '',
-          isMuted: globalMute,
-          onMuteChanged: onMuteChanged,
+          postId: post.id,
+          index: index,
         );
     }
   }
 
   String _getTimeAgo(DateTime timestamp) {
     final difference = DateTime.now().difference(timestamp);
-
+    
     if (difference.inDays > 0) {
       return '${difference.inDays}d';
     } else if (difference.inHours > 0) {

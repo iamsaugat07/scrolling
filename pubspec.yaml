@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   video_player: ^2.7.0
   visibility_detector: ^0.4.0+2
+  flutter_cache_manager: ^3.3.1
+  cached_network_image: ^3.2.3
+  hooks_riverpod: ^2.5.1
 
 dev_dependencies:
   flutter_test:
