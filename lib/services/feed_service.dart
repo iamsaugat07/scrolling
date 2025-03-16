@@ -34,13 +34,11 @@ class FeedService {
   ];
   
   final List<String> _videoUrls = [
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8', // Added sample m3u8 file
-    'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8', // Added sample m3u8 file
+    'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8', 
+   ' https://content.jwplatform.com/manifests/vM7nH0Kl.m3u8',
+    'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8', 
+    'https://qthttp.apple.com.edgesuite.net/1010qwoeiuryfg/sl.m3u8'
+
   ];
 
   // Simulate fetching posts from a server
